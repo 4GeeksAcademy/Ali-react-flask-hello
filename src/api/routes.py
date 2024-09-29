@@ -2,21 +2,95 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User
+from api.models import db, User, Invoice
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
+
+
+from flask_jwt_extended import create_access_token
+from flask_jwt_extended import get_jwt_identity
+from flask_jwt_extended import jwt_required
+
 
 api = Blueprint('api', __name__)
 
 # Allow CORS requests to this API
 CORS(api)
 
+# /token Post 
+# / this route is for when the user ALREADY exists and needs an access token 
+# / create a user query with a conditional to see if the user exists, or return None
+@api.route('/token', methods=['POST'])
+def generate_token():
 
-@api.route('/hello', methods=['POST', 'GET'])
-def handle_hello():
+    #recieving the request and converting the body of 
+    # the request into json format
+    email = request.json.get("email", None)
+    password = request.json.get("password", None)
 
-    response_body = {
-        "message": "Hello! I'm a message that came from the backend, check the network tab on the google inspector and you will see the GET request"
+    #query the User table to check if the user exists
+    email = email.lower()
+    user = User.query.filter_by(email=email, password=password).first()
+
+    if user is None:
+        response = {
+           "msg": "Email or Password  does not match."
+
+        }
+        return jsonify(response), 401
+    access_token = create_access_token(identity=user.id)
+    response = {
+        "access_token": access_token,
+        "User_id": user.id,
+        "msg": f'Welcome {user.email}! This workd!'
     }
+    return jsonify(response), 200
 
-    return jsonify(response_body), 200
+
+    #create a route  for /signup that will add the user's email and password to the DB
+    #POST
+    #test that on postman
+
+@api.route('/signup', methods=['POST'])
+def register_user():
+    email = request.json.get("email", None)
+    password = request.json.get('password', None)
+
+    #query to check if the email already exists
+    email = email.lower()
+    user = User.query.filter_by(email=email).first()
+
+    if user.email == email:
+        response = {
+            "msg": "User already exists."
+        }
+        return jsonify(response), 403
+    
+    #if the email does Not exist, go ahead and make a new record in teh DB
+    #sign this person up 
+    
+
+    user = User()
+    user.email = email
+    user.password = password
+    db.session.add(user)
+    db.session.commit()
+
+    response = {
+        'msg': f'Congratulations {user.email}. You have successfully signed up!'
+
+    }
+    return jsonify(response), 200
+
+
+    
+
+    #create a route for /invoices that will retrieve and return the users invoices 
+    #in json format
+    #GET
+
+@api.route('/invoices', methods=['GET'])
+def get_invoices():
+    pass
+
+   
