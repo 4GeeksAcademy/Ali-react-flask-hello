@@ -42,7 +42,7 @@ def generate_token():
     response = {
         "access_token": access_token,
         "User_id": user.id,
-        "msg": f'Welcome {user.email}! This workd!'
+        "msg": f'Welcome {user.email}!'
     }
     return jsonify(response), 200
 
@@ -60,7 +60,7 @@ def register_user():
     email = email.lower()
     user = User.query.filter_by(email=email).first()
 
-    if user is not None and user.email == email:
+    if user:
         response = {
             "msg": "User already exists."
         }
@@ -114,4 +114,5 @@ def get_invoices():
     }
 
     return jsonify(response), 200
-   
+
+
